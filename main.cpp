@@ -36,10 +36,8 @@ int main() {
     int id, quantity;
     double price;
     char side;
-    std::string line;
-    while (std::cin >> id >> side >> price >> quantity) {
 
-	// get consistent ref to book without branching
+    while (std::cin >> id >> side >> price >> quantity) {
 	if (quantity == 0) {
 	    auto it = orders.find(id);
 	    if (it != orders.end()) {
