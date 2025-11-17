@@ -1,6 +1,5 @@
 #include <iostream>
 #include <map>
-#include <sstream>
 #include <unordered_map>
 
 
@@ -12,19 +11,16 @@ struct Order {
 
 
 void printBestOrders(const std::map<double, int>& bids, const std::map<double, int>& asks) {
-    auto bestBidIt = bids.rbegin();
-    auto bestAskIt = asks.begin();
-
-    if (bestBidIt != bids.rend()) {
-	std::cout << bestBidIt->first << ' ';
+    if (!bids.empty()) {
+	std::cout << bids.rbegin()->first << ' ';
     } else {
-	std::cout << '-' << ' ';
+	std::cout << "- ";
     }
 
-    if (bestAskIt != asks.end()) {
-	std::cout << bestAskIt->first << '\n';
+    if (!asks.empty()) {
+	std::cout << asks.begin()->first << '\n';
     } else {
-	std::cout << '-' << '\n';
+	std::cout << "-\n";
     }
 }
 
@@ -41,39 +37,38 @@ int main() {
     double price;
     char side;
     std::string line;
-    while (std::getline(std::cin, line)) {
-	auto stream = std::istringstream(line);
-	stream >> id;
-	stream >> side;
-	stream >> price;
-	stream >> quantity;
+    while (std::cin >> id >> side >> price >> quantity) {
 
 	// get consistent ref to book without branching
-	auto& book = side == 'B' ? bids : asks;
 	if (quantity == 0) {
 	    auto it = orders.find(id);
-	    if (it == orders.end()) {
-		continue;
+	    if (it != orders.end()) {
+		const Order& order = it->second;
+		auto& book = order.side == 'B' ? bids : asks;
+		
+		book[order.price] -= order.quantity;
+		if (book[order.price] <= 0) {
+		    book.erase(order.price);
+		}
+		orders.erase(it);
 	    }
-
-	    book[price] -= it->second.quantity;
-	    if (book[price] <= 0) {
-		book.erase(price);
-	    }
-	    orders.erase(id);
-
-	    printBestOrders(bids, asks);
-	    continue;
-	}
-
-	auto it = orders.find(id);
-	if (it != orders.end()) {
-	    int oldQuantity = it->second.quantity;
-	    book[price] -= (quantity - oldQuantity);
 	} else {
-	    orders.emplace(id, Order{side, price, quantity});
+	    auto it = orders.find(id);
+	    if (it != orders.end()) {
+		const Order& oldOrder = it->second;
+		auto& oldBook = oldOrder.side == 'B' ? bids : asks;
+
+		oldBook[oldOrder.price] -= oldOrder.quantity;
+		if (oldBook[oldOrder.price] <= 0) {
+		    oldBook.erase(oldOrder.price);
+		}
+	    }
+
+	    orders[id] = {side, price, quantity};
+	    auto& book = side == 'B' ? bids : asks;
 	    book[price] += quantity;
 	}
+
 	printBestOrders(bids, asks);
     }
 
